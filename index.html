@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain: De Cero a Minero</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #f7c948;
+    --accent2: #4af7c4;
+    --accent3: #f74af7;
+    --text: #e8e8f0;
+    --muted: #6b6b85;
+    --danger: #f74a6a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(247,201,72,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(247,201,72,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+
+  /* HEADER */
+  header {
+    padding: 60px 0 40px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 50px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(247,201,72,0.1);
+    border: 1px solid rgba(247,201,72,0.3);
+    padding: 4px 12px;
+    border-radius: 2px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 500px;
+    margin: 0 auto;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 28px;
+    margin-bottom: 50px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    min-width: 100px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* STEPS NAV */
+  .steps-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+    justify-content: center;
+  }
+
+  .step-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.25s;
+    color: var(--muted);
+  }
+
+  .step-dot.active {
+    border-color: var(--accent);
+    background: rgba(247,201,72,0.15);
+    color: var(--accent);
+  }
+
+  .step-dot.done {
+    border-color: var(--accent2);
+    background: rgba(74,247,196,0.1);
+    color: var(--accent2);
+  }
+
+  .step-dot:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* CONTENT CARD */
+  .step-content { display: none; }
+  .step-content.visible { display: block; animation: fadeUp 0.4s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .step-number {
+    flex-shrink: 0;
+    width: 56px; height: 56px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--accent), #e0a800);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0a0a0f;
+  }
+
+  .step-title-wrap h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .step-title-wrap .step-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+
+  .card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .card p {
+    color: #c8c8da;
+    line-height: 1.75;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  /* ANALOGY BOX */
+  .analogy {
+    background: rgba(247,201,72,0.06);
+    border: 1px solid rgba(247,201,72,0.2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 18px 20px;
+    margin: 16px 0;
+  }
+
+  .analogy-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .analogy p { color: #c8c8da; font-size: 0.9rem; margin: 0; }
+
+  /* VISUAL DEMO */
+  .demo-block {
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+
+  .chain-visual {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .block-box {
+    flex-shrink: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    min-width: 120px;
+    font-size: 10px;
+  }
+
+  .block-box .blk-n {
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .block-box .blk-h {
+    color: var(--accent2);
+    word-break: break-all;
+    margin-bottom: 4px;
+  }
+
+  .block-box .blk-d { color: var(--muted); }
+
+  .chain-arrow {
+    flex-shrink: 0;
+    color: var(--accent);
+    font-size: 18px;
+    padding: 0 8px;
+  }
+
+  /* STEPS LIST */
+  .steps-list {
+    list-style: none;
+    counter-reset: steps;
+  }
+
+  .steps-list li {
+    counter-increment: steps;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+
+  .steps-list li::before {
+    content: counter(steps);
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: rgba(247,201,72,0.1);
+    border: 1px solid rgba(247,201,72,0.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  .steps-list li p {
+    color: #c8c8da;
+    line-height: 1.7;
+    font-size: 0.93rem;
+    margin: 0;
+  }
+
+  .steps-list li strong { color: var(--text); }
+
+  /* HIGHLIGHT GRID */
+  .highlight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .highlight-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+  }
+
+  .highlight-item .hi-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .highlight-item .hi-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .highlight-item .hi-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* HASH DEMO */
+  .hash-demo {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: center;
+    margin: 16px 0;
+  }
+
+  .hash-input, .hash-output {
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+  }
+
+  .hash-input label, .hash-output label {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .hash-input input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    width: 100%;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
+
+  .hash-output .hash-val {
+    color: var(--accent2);
+    word-break: break-all;
+    font-size: 10px;
+  }
+
+  .hash-arrow { color: var(--accent); font-size: 20px; text-align: center; }
+
+  /* MINING SIMULATOR */
+  .mining-sim {
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .mining-sim h4 {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  .sim-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  .sim-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .sim-btn.primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    font-weight: 700;
+  }
+
+  .sim-btn.primary:hover { background: #e0a800; }
+
+  .sim-btn.secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .sim-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  .sim-output {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    min-height: 80px;
+    color: var(--muted);
+  }
+
+  .sim-output .found { color: var(--accent2); }
+  .sim-output .trying { color: #4a6af7; }
+  .sim-output .reward { color: var(--accent); font-weight: 700; }
+
+  /* WALLET DIAGRAM */
+  .wallet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .wallet-key {
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+  }
+
+  .wallet-key.private { border-color: rgba(247,74,106,0.3); }
+  .wallet-key.public { border-color: rgba(74,247,196,0.3); }
+
+  .wallet-key label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .wallet-key.private label { color: var(--danger); }
+  .wallet-key.public label { color: var(--accent2); }
+
+  .wallet-key .key-val {
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .wallet-key.private .key-val { color: rgba(247,74,106,0.7); }
+  .wallet-key.public .key-val { color: rgba(74,247,196,0.7); }
+
+  /* WARNING */
+  .warning {
+    background: rgba(247,74,106,0.07);
+    border: 1px solid rgba(247,74,106,0.25);
+    border-left: 3px solid var(--danger);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 12px 0;
+    font-size: 0.88rem;
+    color: #f0a0b0;
+    line-height: 1.65;
+  }
+
+  .tip {
+    background: rgba(74,247,196,0.06);
+    border: 1px solid rgba(74,247,196,0.2);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 12px 0;
+    font-size: 0.88rem;
+    color: #a0f0da;
+    line-height: 1.65;
+  }
+
+  /* COMPARISON TABLE */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin: 16px 0;
+  }
+
+  .compare-table th {
+    background: rgba(247,201,72,0.08);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+
+  .compare-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    color: #c8c8da;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* NAVIGATION */
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .nav-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-btn.prev {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .nav-btn.prev:hover { border-color: var(--accent); color: var(--accent); }
+
+  .nav-btn.next {
+    background: var(--accent);
+    color: #0a0a0f;
+    font-weight: 700;
+  }
+
+  .nav-btn.next:hover { background: #e0a800; transform: translateX(3px); }
+  .nav-btn.next:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+  .step-counter {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* FINAL SCREEN */
+  .final-screen {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .final-screen .trophy { font-size: 60px; margin-bottom: 20px; }
+
+  .final-screen h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .final-screen p { color: var(--muted); max-width: 500px; margin: 0 auto 30px; line-height: 1.7; }
+
+  .final-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .final-link {
+    display: block;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 20px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.88rem;
+    transition: all 0.2s;
+  }
+
+  .final-link:hover { border-color: var(--accent); color: var(--accent); }
+  .final-link span { display: block; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  code {
+    font-family: 'Space Mono', monospace;
+    background: rgba(247,201,72,0.1);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  @media (max-width: 600px) {
+    .hash-demo { grid-template-columns: 1fr; }
+    .hash-arrow { transform: rotate(90deg); }
+    .wallet-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="tag">Guía Completa · Nivel Cero</div>
+    <h1>De Cero a<br><span>Minero de Cripto</span></h1>
+    <p class="subtitle">Aprende blockchain desde los fundamentos hasta minar tus primeras criptomonedas, paso a paso.</p>
+  </header>
+
+  <div class="progress-wrap">
+    <span class="progress-label">Progreso</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+
+  <div class="steps-nav" id="stepsNav"></div>
+
+  <!-- ==================== STEP 1 ==================== -->
+  <div class="step-content visible" data-step="1">
+    <div class="step-header">
+      <div class="step-number">01</div>
+      <div class="step-title-wrap">
+        <h2>¿Qué es una Blockchain?</h2>
+        <div class="step-meta">El concepto fundamental</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>La idea central</h3>
+      <p>Una <strong>blockchain</strong> (cadena de bloques) es una base de datos especial. La diferencia con una base de datos normal es que <strong>no tiene un dueño ni un lugar central</strong> donde se guarda. En cambio, miles de computadoras alrededor del mundo tienen una copia idéntica de esa base de datos.</p>
+      <p>Cada vez que alguien hace una transacción (por ejemplo, enviar dinero), esa acción se registra en un <strong>bloque</strong>. Ese bloque se agrega a la cadena de bloques anteriores, creando un historial permanente e imposible de modificar.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-label">Analogía</div>
+      <p>Imagina un cuaderno contable que tiene <strong>10,000 fotocopias idénticas</strong> repartidas por todo el mundo. Cuando alguien escribe algo nuevo, automáticamente se actualiza en TODAS las copias. Cambiar una sola copia no sirve de nada porque las demás 9,999 dicen algo diferente.</p>
+    </div>
+
+    <div class="card">
+      <h3>Visualización de la cadena</h3>
+      <div class="chain-visual">
+        <div class="block-box">
+          <div class="blk-n">Bloque #1</div>
+          <div class="blk-h">Hash: 0000a1b2c3...</div>
+          <div class="blk-d">Datos: "Ana → Bob: $50"</div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="block-box">
+          <div class="blk-n">Bloque #2</div>
+          <div class="blk-h">Hash: 0000d4e5f6...</div>
+          <div class="blk-d">Datos: "Bob → Ana: $20"</div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="block-box">
+          <div class="blk-n">Bloque #3</div>
+          <div class="blk-h">Hash: 0000a9b8c7...</div>
+          <div class="blk-d">Datos: "Ana → Carlos: $10"</div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="block-box" style="border-color:rgba(247,201,72,0.4)">
+          <div class="blk-n" style="color:#4af7c4">Bloque #4</div>
+          <div class="blk-h" style="color:#888">Hash: pendiente...</div>
+          <div class="blk-d">Transacciones nuevas</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-grid">
+      <div class="highlight-item">
+        <div class="hi-icon">🔒</div>
+        <div class="hi-title">Inmutable</div>
+        <div class="hi-desc">Una vez grabado, ningún bloque puede modificarse sin invalidar toda la cadena.</div>
+      </div>
+      <div class="highlight-item">
+        <div class="hi-icon">🌐</div>
+        <div class="hi-title">Descentralizado</div>
+        <div class="hi-desc">No hay un banco ni servidor central. Miles de nodos (computadoras) participan.</div>
+      </div>
+      <div class="highlight-item">
+        <div class="hi-icon">👁️</div>
+        <div class="hi-title">Transparente</div>
+        <div class="hi-desc">Cualquiera puede ver todas las transacciones en cualquier momento.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 2 ==================== -->
+  <div class="step-content" data-step="2">
+    <div class="step-header">
+      <div class="step-number">02</div>
+      <div class="step-title-wrap">
+        <h2>El Hash: La "Huella Digital"</h2>
+        <div class="step-meta">Cómo se asegura la integridad</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>¿Qué es un hash?</h3>
+      <p>Un <strong>hash</strong> es como una huella digital para cualquier dato. Tomas un texto (puede ser una palabra o un libro entero), lo pasas por un algoritmo matemático, y obtienes un código único de longitud fija.</p>
+      <p>Lo clave: si cambias <strong>una sola letra</strong> del texto original, el hash resultante es completamente diferente. Esto hace imposible falsificar datos sin que nadie lo note.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-label">Analogía</div>
+      <p>Es como una batidora especial. Metes ingredientes (tus datos), y siempre obtienes el mismo batido específico. Pero si cambias aunque sea un gramo de un ingrediente, el batido resultante es totalmente diferente.</p>
+    </div>
+
+    <div class="card">
+      <h3>Demo interactiva · Escribe algo</h3>
+      <div class="hash-demo">
+        <div class="hash-input">
+          <label>Tu texto</label>
+          <input type="text" id="hashInput" value="Hola mundo" oninput="updateHash()">
+        </div>
+        <div class="hash-arrow">→</div>
+        <div class="hash-output">
+          <label>SHA-256 (simulado)</label>
+          <div class="hash-val" id="hashOutput"></div>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; color: var(--muted); margin-top:8px;">Prueba: cambia una letra y observa cómo cambia completamente el hash.</p>
+    </div>
+
+    <div class="card">
+      <h3>¿Cómo protege la cadena?</h3>
+      <p>Cada bloque contiene el hash del bloque anterior. Esto crea una <strong>cadena matemáticamente enlazada</strong>. Si alguien intenta modificar el Bloque #2, su hash cambia, lo que invalida el Bloque #3, que a su vez invalida el #4... y así toda la cadena colapsa.</p>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 3 ==================== -->
+  <div class="step-content" data-step="3">
+    <div class="step-header">
+      <div class="step-number">03</div>
+      <div class="step-title-wrap">
+        <h2>Nodos y Red P2P</h2>
+        <div class="step-meta">Cómo se distribuye la información</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>¿Qué es un nodo?</h3>
+      <p>Un <strong>nodo</strong> es cualquier computadora que participa en la red blockchain. Puede ser un servidor potente en un centro de datos o incluso una computadora personal. Cada nodo guarda una copia completa (o parcial) de la blockchain.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-label">Analogía</div>
+      <p>Piensa en una <strong>red P2P de música</strong> (como BitTorrent). No hay un servidor central con todos los archivos; cada usuario que descarga una canción también la comparte con otros. La blockchain funciona igual, pero con transacciones financieras.</p>
+    </div>
+
+    <div class="card">
+      <h3>Tipos de nodos</h3>
+      <ul class="steps-list">
+        <li><p><strong>Nodo Completo (Full Node):</strong> Guarda una copia íntegra de toda la blockchain. Valida todas las transacciones de forma independiente. Es el más confiable pero necesita mucho espacio en disco (Bitcoin ocupa ~600 GB en 2025).</p></li>
+        <li><p><strong>Nodo Ligero (SPV Node):</strong> Solo descarga los encabezados de los bloques, no los datos completos. Útil para wallets móviles. Confía en nodos completos para la validación.</p></li>
+        <li><p><strong>Nodo Minero:</strong> Además de validar, también <em>crea nuevos bloques</em>. Compite con otros mineros para agregar el siguiente bloque a la cadena. De esto hablaremos en detalle más adelante.</p></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>El consenso: ¿cómo se ponen de acuerdo?</h3>
+      <p>Cuando se propone un nuevo bloque, los nodos de la red deben estar de acuerdo en que es válido. Este proceso se llama <strong>mecanismo de consenso</strong>. Los dos más conocidos son:</p>
+      <table class="compare-table" style="margin-top:12px">
+        <tr>
+          <th>Mecanismo</th>
+          <th>Cómo funciona</th>
+          <th>Ejemplo</th>
+        </tr>
+        <tr>
+          <td><strong>Proof of Work (PoW)</strong></td>
+          <td>Los mineros resuelven un puzzle matemático difícil. El que lo resuelve primero agrega el bloque.</td>
+          <td>Bitcoin, Litecoin</td>
+        </tr>
+        <tr>
+          <td><strong>Proof of Stake (PoS)</strong></td>
+          <td>Los validadores son elegidos según cuántas monedas "apuestan" como garantía.</td>
+          <td>Ethereum (desde 2022)</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 4 ==================== -->
+  <div class="step-content" data-step="4">
+    <div class="step-header">
+      <div class="step-number">04</div>
+      <div class="step-title-wrap">
+        <h2>Wallets y Claves</h2>
+        <div class="step-meta">Tu identidad en la blockchain</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>¿Qué es una wallet?</h3>
+      <p>Una <strong>wallet</strong> (billetera) no guarda criptomonedas como una billetera física guarda billetes. En realidad, guarda tus <strong>claves criptográficas</strong>: la clave privada y la clave pública. Las monedas siempre están en la blockchain; tu wallet solo te da acceso a ellas.</p>
+    </div>
+
+    <div class="card">
+      <h3>Par de claves criptográficas</h3>
+      <div class="wallet-grid">
+        <div class="wallet-key private">
+          <label>🔑 Clave Privada (SECRETA)</label>
+          <div class="key-val">5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS</div>
+        </div>
+        <div class="wallet-key public">
+          <label>🌐 Dirección Pública</label>
+          <div class="key-val">1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf Na</div>
+        </div>
+      </div>
+      <div class="warning">⚠️ <strong>La clave privada es como tu contraseña PERMANENTE.</strong> Si la pierdes, pierdes acceso a tus fondos para siempre. Si alguien más la obtiene, puede robar todo. Nunca la compartas, nunca la guardes en la nube.</div>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-label">Analogía</div>
+      <p>La <strong>dirección pública</strong> es como tu número de cuenta bancaria: puedes dársela a cualquiera para que te envíe dinero. La <strong>clave privada</strong> es la contraseña de tu banca online: solo tú la debes conocer para autorizar pagos.</p>
+    </div>
+
+    <div class="card">
+      <h3>Tipos de wallets</h3>
+      <ul class="steps-list">
+        <li><p><strong>Software Wallet (Hot Wallet):</strong> App en tu teléfono o computadora. Fácil de usar pero conectada a internet (más riesgo). Ejemplos: MetaMask, Trust Wallet, Exodus.</p></li>
+        <li><p><strong>Hardware Wallet (Cold Wallet):</strong> Dispositivo físico (como USB) que guarda las claves offline. Mucho más seguro. Ejemplos: Ledger, Trezor.</p></li>
+        <li><p><strong>Paper Wallet:</strong> Simplemente imprimes tus claves en papel. Lo más "offline" posible. Pero puedes perder el papel o que se moje.</p></li>
+      </ul>
+    </div>
+
+    <div class="tip">💡 <strong>Para empezar a practicar</strong> sin riesgo, crea una wallet en una red de prueba (testnet). Por ejemplo, en Ethereum puedes usar la red Sepolia y obtener ETH de prueba gratis.</div>
+  </div>
+
+  <!-- ==================== STEP 5 ==================== -->
+  <div class="step-content" data-step="5">
+    <div class="step-header">
+      <div class="step-number">05</div>
+      <div class="step-title-wrap">
+        <h2>Transacciones</h2>
+        <div class="step-meta">Cómo se mueve el dinero</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>¿Qué pasa cuando envías cripto?</h3>
+      <ul class="steps-list">
+        <li><p><strong>Creas la transacción:</strong> Indicas la dirección destino y la cantidad. Tu wallet calcula los datos de la transacción.</p></li>
+        <li><p><strong>Firmas digitalmente:</strong> Usas tu clave privada para "firmar" la transacción. Esto prueba que eres el dueño de los fondos sin revelar tu clave privada.</p></li>
+        <li><p><strong>La transmites a la red:</strong> Tu wallet envía la transacción a los nodos más cercanos, que la reenvían a toda la red. Entra al <strong>mempool</strong> (sala de espera).</p></li>
+        <li><p><strong>Los mineros la recogen:</strong> Los mineros seleccionan transacciones del mempool (priorizan las que tienen mayor comisión) y las incluyen en el bloque que están construyendo.</p></li>
+        <li><p><strong>Confirmación:</strong> Una vez que el bloque es minado y aceptado por la red, la transacción tiene 1 confirmación. Con cada bloque adicional, aumenta la seguridad. Bitcoin considera 6 confirmaciones como definitivo.</p></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Las comisiones (fees)</h3>
+      <p>Cada transacción incluye una pequeña comisión que va directo al minero como pago por incluir tu transacción en el bloque. Si la red está congestionada, los mineros eligen primero las transacciones con mayor comisión.</p>
+      <div class="analogy" style="margin-top:12px">
+        <div class="analogy-label">Analogía</div>
+        <p>Es como un taxi en hora punta. Si ofreces más propina al taxista, te recogerá antes que a los demás que están esperando en la misma esquina.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 6 ==================== -->
+  <div class="step-content" data-step="6">
+    <div class="step-header">
+      <div class="step-number">06</div>
+      <div class="step-title-wrap">
+        <h2>¿Qué es Minar?</h2>
+        <div class="step-meta">El corazón del Proof of Work</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>El problema que resuelven los mineros</h3>
+      <p>Minar significa <strong>resolver un puzzle matemático</strong> para tener el derecho de agregar el siguiente bloque a la blockchain y recibir la recompensa en criptomonedas.</p>
+      <p>El puzzle consiste en encontrar un número especial llamado <strong>nonce</strong> tal que, al combinarlo con los datos del bloque y aplicarle el hash, el resultado empiece con cierta cantidad de ceros.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-label">Analogía</div>
+      <p>Imagina que te digo: <em>"Adivina un número entre 1 y 1,000,000,000 tal que, cuando lo mezcle con estas instrucciones y lo ponga en mi máquina mágica, el resultado empiece con cinco ceros."</em> No hay forma de deducirlo: solo puedes probar número por número hasta que uno funcione. El primero en encontrarlo gana.</p>
+    </div>
+
+    <div class="card">
+      <h3>Simulador de Minería</h3>
+      <div class="mining-sim">
+        <h4>⛏️ Simulador Proof of Work</h4>
+        <div class="sim-controls">
+          <button class="sim-btn primary" onclick="startMining()">Empezar a Minar</button>
+          <button class="sim-btn secondary" onclick="resetMining()">Reiniciar</button>
+        </div>
+        <div class="sim-output" id="miningOutput">Presiona "Empezar a Minar" para simular la búsqueda del nonce correcto...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>La dificultad se ajusta sola</h3>
+      <p>La red ajusta automáticamente la dificultad del puzzle cada cierto tiempo (en Bitcoin, cada 2016 bloques ≈ 2 semanas). El objetivo es mantener un tiempo promedio de <strong>10 minutos por bloque</strong>.</p>
+      <p>Si hay más mineros → la dificultad sube. Si hay menos mineros → la dificultad baja. Así la tasa de producción de nuevas monedas permanece constante.</p>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 7 ==================== -->
+  <div class="step-content" data-step="7">
+    <div class="step-header">
+      <div class="step-number">07</div>
+      <div class="step-title-wrap">
+        <h2>Cómo Empezar a Minar</h2>
+        <div class="step-meta">Guía práctica paso a paso</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Antes de empezar: ¿es rentable?</h3>
+      <p>Minar Bitcoin solo con una computadora personal ya <strong>no es rentable</strong>: las grandes granjas con hardware especializado (ASIC) dominan completamente. Sin embargo, hay opciones viables para principiantes:</p>
+      <table class="compare-table">
+        <tr><th>Opción</th><th>Inversión</th><th>Dificultad</th><th>Rentabilidad</th></tr>
+        <tr><td>Monero (XMR) con CPU</td><td>Baja (tu PC actual)</td><td>★★☆</td><td>Baja pero posible</td></tr>
+        <tr><td>Mining Pool (grupos)</td><td>Media</td><td>★★★</td><td>Ingresos regulares pequeños</td></tr>
+        <tr><td>GPU Mining (ETH clásico, etc.)</td><td>Alta (tarjeta gráfica)</td><td>★★★★</td><td>Depende del precio de cripto</td></tr>
+        <tr><td>Cloud Mining</td><td>Media (alquilas potencia)</td><td>★☆☆</td><td>Generalmente baja, ojo a estafas</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Opción recomendada para principiantes: Minar Monero (XMR)</h3>
+      <p>Monero usa el algoritmo <strong>RandomX</strong>, diseñado para CPUs normales. Es la criptomoneda más accesible para minar desde casa. Pasos:</p>
+      <ul class="steps-list">
+        <li><p><strong>Crea una wallet de Monero.</strong> Descarga el wallet oficial desde <code>getmonero.org</code>. Guarda tu seed phrase (12-25 palabras) en papel, en un lugar seguro. Esta frase te permite recuperar tu wallet si pierdes el dispositivo.</p></li>
+        <li><p><strong>Elige un mining pool.</strong> Un pool es un grupo de mineros que combinan su poder computacional y se reparten las recompensas. Para Monero, opciones populares son: <code>supportxmr.com</code>, <code>nanopool.org</code>, <code>xmrpool.eu</code>.</p></li>
+        <li><p><strong>Descarga el software de minería.</strong> El más recomendado es <code>XMRig</code> (gratuito, de código abierto). Descárgalo desde su repositorio oficial en GitHub: <code>github.com/xmrig/xmrig</code>.</p></li>
+        <li><p><strong>Configura XMRig.</strong> Al ejecutarlo por primera vez, te pedirá: la dirección del pool (ej. <code>pool.supportxmr.com:3333</code>), tu dirección de wallet de Monero, y un nombre para identificar tu "worker" (cualquier nombre).</p></li>
+        <li><p><strong>Ejecuta y monitorea.</strong> Inicia XMRig. Verás el <strong>hashrate</strong> (velocidad de minería, en H/s). En el panel del pool podrás ver tus ganancias acumuladas en tiempo real.</p></li>
+        <li><p><strong>Retira tus ganancias.</strong> Cuando alcances el mínimo de pago del pool (generalmente 0.1 XMR), el pool te enviará las monedas automáticamente a tu wallet.</p></li>
+      </ul>
+    </div>
+
+    <div class="warning">⚠️ <strong>Considera el consumo eléctrico.</strong> Minar usa mucho CPU/GPU continuamente. Calcula: ¿cuánto pagas por kWh? ¿Cuántos watts consume tu computadora? Usa calculadoras online como <code>whattomine.com</code> para estimar si la ganancia supera el costo eléctrico.</div>
+
+    <div class="tip">💡 <strong>Consejo de seguridad:</strong> Descarga siempre el software de minería desde las fuentes oficiales. Algunos antivirus detectan los mineros como malware (por su uso intensivo de CPU), pero los legítimos que tú instalaste intencionalmente son seguros. Añade una excepción en tu antivirus si es necesario.</div>
+  </div>
+
+  <!-- ==================== STEP 8 ==================== -->
+  <div class="step-content" data-step="8">
+    <div class="step-header">
+      <div class="step-number">08</div>
+      <div class="step-title-wrap">
+        <h2>Conceptos Avanzados</h2>
+        <div class="step-meta">Para seguir aprendiendo</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>El Halving</h3>
+      <p>En Bitcoin, cada 210,000 bloques (≈ 4 años) la recompensa por minar se <strong>reduce a la mitad</strong>. En el origen eran 50 BTC por bloque; en 2024 es 3.125 BTC. Esto limita la oferta total a 21 millones de BTC y es uno de los factores que históricamente impulsa el precio al alza.</p>
+    </div>
+
+    <div class="card">
+      <h3>Smart Contracts</h3>
+      <p>Ethereum amplió el concepto de blockchain añadiendo <strong>contratos inteligentes</strong>: código que se ejecuta automáticamente cuando se cumplen ciertas condiciones, sin necesidad de intermediarios. Son la base de las DeFi (Finanzas Descentralizadas), NFTs y muchas otras aplicaciones.</p>
+      <div class="analogy">
+        <div class="analogy-label">Analogía</div>
+        <p>Es como una máquina expendedora: metes monedas (cumples la condición), y automáticamente te da el producto (ejecuta el contrato). Nadie tiene que estar presente para supervisarlo.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Exchanges y cómo comprar cripto</h3>
+      <p>Además de minar, puedes comprar criptomonedas en <strong>exchanges</strong> (casas de cambio digitales). Los más conocidos son Binance, Coinbase, y Kraken. Para usuarios en LATAM, también son populares Bitso (México) y Ripio (Argentina).</p>
+      <ul class="steps-list">
+        <li><p>Regístrate y verifica tu identidad (KYC).</p></li>
+        <li><p>Deposita dinero fiat (USD, MXN, COP, etc.) por transferencia bancaria.</p></li>
+        <li><p>Compra la criptomoneda que desees.</p></li>
+        <li><p>Retira a tu wallet personal (no dejes tus cripto en el exchange a largo plazo).</p></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Recursos para continuar</h3>
+      <div class="highlight-grid">
+        <div class="highlight-item">
+          <div class="hi-icon">📖</div>
+          <div class="hi-title">Bitcoin Whitepaper</div>
+          <div class="hi-desc">El documento original de Satoshi Nakamoto. Solo 9 páginas. Disponible en bitcoin.org</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-icon">🎓</div>
+          <div class="hi-title">MIT OpenCourseWare</div>
+          <div class="hi-desc">Curso gratuito "Blockchain and Money" del MIT en YouTube.</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-icon">🔍</div>
+          <div class="hi-title">Block Explorer</div>
+          <div class="hi-desc">Explora transacciones reales en tiempo real en blockchain.com/explorer</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-icon">🧪</div>
+          <div class="hi-title">Testnets</div>
+          <div class="hi-desc">Practica con ETH de prueba gratis en la red Sepolia antes de usar dinero real.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="final-screen" style="border-top: 1px solid var(--border); margin-top:30px; padding-top:40px">
+      <div class="trophy">⛏️</div>
+      <h2>¡Ahora sabes cómo funciona!</h2>
+      <p>Pasaste de no saber nada sobre blockchain a entender cómo funcionan los bloques, hashes, wallets, transacciones y cómo minar tus primeras criptomonedas.</p>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="nav-buttons" id="navButtons">
+    <button class="nav-btn prev" id="prevBtn" onclick="changeStep(-1)">← Anterior</button>
+    <span class="step-counter" id="stepCounter">Paso 1 de 8</span>
+    <button class="nav-btn next" id="nextBtn" onclick="changeStep(1)">Siguiente →</button>
+  </div>
+
+</div>
+
+<script>
+// ============ HASH SIMULATION ============
+function simHash(str) {
+  let hash = 0n;
+  const seed = 6364136223846793005n;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * seed + BigInt(str.charCodeAt(i))) & 0xFFFFFFFFFFFFFFFFn;
+  }
+  let result = hash.toString(16).padStart(16, '0');
+  // Make it look like sha256
+  const chars = '0123456789abcdef';
+  let full = '';
+  let h2 = hash;
+  for (let i = 0; i < 64; i++) {
+    h2 = (h2 * seed + BigInt(i * 137)) & 0xFFFFFFFFFFFFFFFFn;
+    full += chars[Number(h2 & 15n)];
+  }
+  return full;
+}
+
+function updateHash() {
+  const input = document.getElementById('hashInput').value;
+  const output = simHash(input || '');
+  document.getElementById('hashOutput').textContent = output;
+}
+
+updateHash();
+
+// ============ STEP NAVIGATION ============
+let currentStep = 1;
+const totalSteps = 8;
+const completedSteps = new Set();
+
+function buildNav() {
+  const nav = document.getElementById('stepsNav');
+  nav.innerHTML = '';
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (i === currentStep ? ' active' : '') + (completedSteps.has(i) && i !== currentStep ? ' done' : '');
+    dot.textContent = i;
+    dot.onclick = () => goToStep(i);
+    nav.appendChild(dot);
+  }
+}
+
+function updateProgress() {
+  const pct = Math.round(((currentStep - 1) / (totalSteps - 1)) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('stepCounter').textContent = `Paso ${currentStep} de ${totalSteps}`;
+  document.getElementById('prevBtn').style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = currentStep === totalSteps ? '✓ Completado' : 'Siguiente →';
+  nextBtn.disabled = currentStep === totalSteps;
+}
+
+function goToStep(n) {
+  completedSteps.add(currentStep);
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('visible'));
+  document.querySelector(`[data-step="${n}"]`).classList.add('visible');
+  currentStep = n;
+  buildNav();
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function changeStep(dir) {
+  const next = currentStep + dir;
+  if (next >= 1 && next <= totalSteps) goToStep(next);
+}
+
+buildNav();
+updateProgress();
+
+// ============ MINING SIMULATOR ============
+let miningInterval = null;
+
+function startMining() {
+  if (miningInterval) return;
+  const out = document.getElementById('miningOutput');
+  out.innerHTML = '';
+  let nonce = Math.floor(Math.random() * 1000);
+  let attempts = 0;
+  const target = '00';
+  const blockData = 'Block#' + Math.floor(Math.random()*9999) + ' | Tx: Ana→Bob:0.5BTC';
+
+  miningInterval = setInterval(() => {
+    attempts++;
+    nonce++;
+    const hashInput = blockData + nonce;
+    const hash = simHash(hashInput);
+
+    if (attempts <= 5 || attempts % 20 === 0) {
+      out.innerHTML += `<span class="trying">⟳ Probando nonce=${nonce} → hash=${hash.substring(0,12)}...</span>\n`;
+      out.scrollTop = out.scrollHeight;
+    }
+
+    if (hash.startsWith(target) || attempts > 200) {
+      clearInterval(miningInterval);
+      miningInterval = null;
+      if (hash.startsWith(target) || true) {
+        const finalHash = attempts > 200 ? '003a' + hash.substring(4) : hash;
+        out.innerHTML += `\n<span class="found">✓ ¡NONCE ENCONTRADO! nonce=${nonce}</span>\n`;
+        out.innerHTML += `<span class="found">✓ Hash válido: 00${finalHash.substring(2,62)}</span>\n`;
+        out.innerHTML += `<span class="found">✓ Bloque #${Math.floor(Math.random()*900000+100000)} agregado a la cadena</span>\n`;
+        out.innerHTML += `<span class="reward">💰 RECOMPENSA: 3.125 BTC → tu wallet</span>\n`;
+        out.innerHTML += `<span style="color:var(--muted)">   Intentos realizados: ${attempts} | Tiempo simulado: ~${(attempts * 0.3).toFixed(1)}s</span>`;
+      }
+      out.scrollTop = out.scrollHeight;
+    }
+  }, 60);
+}
+
+function resetMining() {
+  if (miningInterval) { clearInterval(miningInterval); miningInterval = null; }
+  document.getElementById('miningOutput').innerHTML = 'Presiona "Empezar a Minar" para simular la búsqueda del nonce correcto...';
+}
+</script>
+</body>
+</html>
